@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MANA ARENA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050506;
+    --panel:#0c0d0a;
+    --green:#39ff14;
+    --pink:#ff3fa4;
+    --cyan:#2de2ff;
+    --yellow:#ffe94d;
+    --red:#ff4d4d;
+    --white:#eaeaea;
+    --dim:#4a4a4a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; image-rendering:pixelated;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--green);
+    font-family:'VT323', monospace;
+    font-size:20px;
+    min-height:100vh;
+    overflow-x:hidden;
+    user-select:none;
+    position:relative;
+  }
+  /* scanlines + flicker overlay */
+  body::before{
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:200;
+    background:repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.35) 3px, rgba(0,0,0,0) 4px);
+    mix-blend-mode:multiply;
+  }
+  body::after{
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:201;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%);
+  }
+  .pixel{font-family:'Press Start 2P', monospace;}
+  h1,h2,h3{font-family:'Press Start 2P', monospace; font-weight:400; margin:0; letter-spacing:0;}
+  .num{font-family:'Press Start 2P', monospace;}
+  button{font-family:'VT323', monospace; cursor:pointer; border:none; border-radius:0;}
+  .hidden{display:none !important;}
+
+  #app{max-width:600px; margin:0 auto; padding:14px 14px 40px; position:relative; min-height:100vh;}
+
+  .crt-frame{
+    border:6px solid var(--green);
+    box-shadow:0 0 0 3px #000, inset 0 0 30px rgba(57,255,20,0.08);
+    padding:16px 14px 24px;
+    background:var(--panel);
+  }
+
+  /* pixel button base */
+  .px-btn{
+    background:#000; color:var(--green); border:3px solid var(--green);
+    box-shadow:4px 4px 0 #000, 0 0 0 1px #000;
+    padding:10px 14px; font-size:14px;
+  }
+  .px-btn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 #000;}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:8px;}
+  .streak-chip{
+    display:flex; align-items:center; gap:6px; font-size:15px;
+    background:#000; border:2px solid var(--yellow); color:var(--yellow);
+    padding:6px 10px;
+  }
+  .lb-btn{color:var(--pink); border-color:var(--pink);}
+
+  /* ---------- HUB ---------- */
+  .title-row{text-align:center; margin-bottom:10px;}
+  .title-row h1{font-size:22px; color:var(--green); text-shadow:2px 2px 0 #000; line-height:1.5;}
+  .title-row .sub{color:var(--white); font-size:16px; margin-top:6px; font-family:'VT323';}
+
+  .core-wrap{display:flex; flex-direction:column; align-items:center; margin:18px 0 26px;}
+  .core{
+    width:170px; height:170px; border:5px solid var(--cyan);
+    background:#000;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow:0 0 0 3px #000, 0 0 22px rgba(45,226,255,0.35);
+    animation:blink-border 1.6s steps(2) infinite;
+  }
+  @keyframes blink-border{50%{border-color:#116b78;}}
+  .core .mana-num{font-size:26px; color:var(--yellow); text-shadow:2px 2px 0 #000; transition:transform .15s ease;}
+  .core .mana-lbl{font-size:11px; color:var(--white); margin-top:10px; letter-spacing:.1em;}
+  .core{padding:0; position:relative; overflow:visible;}
+  .core:active{transform:scale(.96);}
+  .core.flexing .mana-num{transform:scale(1.35); color:var(--green);}
+  .player-name{color:var(--dim); font-size:16px; margin-top:4px; font-family:'VT323';}
+  .core-tap-hint{color:var(--dim); font-size:12px; margin-top:6px; letter-spacing:.08em;}
+
+  /* shockwave ring fired from the core */
+  .shockwave{
+    position:fixed; left:0; top:0; width:40px; height:40px; margin-left:-20px; margin-top:-20px;
+    border:4px solid var(--cyan); border-radius:50%; pointer-events:none; z-index:150;
+    animation:shockwave-out .8s ease-out forwards;
+  }
+  @keyframes shockwave-out{
+    0%{width:40px; height:40px; margin-left:-20px; margin-top:-20px; opacity:1; border-color:var(--cyan);}
+    60%{border-color:var(--green);}
+    100%{width:900px; height:900px; margin-left:-450px; margin-top:-450px; opacity:0; border-color:var(--pink);}
+  }
+
+  /* ---------- MINIGAME GRID ---------- */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .game-card{
+    background:#000; border:3px solid var(--dim); color:var(--white);
+    padding:14px 10px; text-align:left; display:flex; flex-direction:column; gap:6px; min-height:98px;
+    box-shadow:4px 4px 0 #000;
+  }
+  .game-card:active{transform:translate(2px,2px); box-shadow:2px 2px 0 #000;}
+  .game-card .icon{font-size:18px; color:inherit;}
+  .game-card .g-name{font-family:'Press Start 2P'; font-size:11px; line-height:1.5;}
+  .game-card .g-best{font-size:14px; color:var(--dim); margin-top:auto; font-family:'VT323';}
+  .game-card.c1{border-color:var(--green); color:var(--green);}
+  .game-card.c2{border-color:var(--cyan); color:var(--cyan);}
+  .game-card.c3{border-color:var(--yellow); color:var(--yellow);}
+  .game-card.c4{border-color:var(--pink); color:var(--pink);}
+
+  /* ---------- GAME SCREEN ---------- */
+  .game-hud{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:6px;}
+  .back-btn{background:#000; color:var(--red); border:2px solid var(--red); font-size:14px; padding:6px 10px;}
+  .game-title{font-family:'Press Start 2P'; font-size:13px; text-align:center; color:var(--white);}
+  .score-chip{background:#000; border:2px solid var(--yellow); color:var(--yellow); padding:5px 10px; font-family:'Press Start 2P'; font-size:12px;}
+  .timerbar{height:10px; background:#000; border:2px solid var(--dim); overflow:hidden; margin-bottom:12px;}
+  .timerbar-fill{height:100%; background:var(--green); width:100%;}
+  .instructions{text-align:center; color:var(--white); font-size:16px; margin-bottom:10px; min-height:20px;}
+
+  canvas{width:100%; display:block; background:#000; border:3px solid var(--dim); touch-action:none;}
+
+  /* Simon Says */
+  .rune-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:300px; margin:10px auto;}
+  .rune-tile{aspect-ratio:1; border:3px solid #000; opacity:.4; transition:opacity .08s;}
+  .rune-tile.active{opacity:1;}
+  .rune-tile.tl{background:var(--green);}
+  .rune-tile.tr{background:var(--cyan);}
+  .rune-tile.bl{background:var(--yellow);}
+  .rune-tile.br{background:var(--pink);}
+
+  /* Timing Game */
+  .pulse-track{position:relative; height:46px; background:#000; border:3px solid var(--dim); margin:20px 0 20px; overflow:hidden;}
+  .pulse-zone{position:absolute; top:0; bottom:0; background:rgba(45,226,255,.28); border-left:2px solid var(--cyan); border-right:2px solid var(--cyan);}
+  .pulse-zone-core{position:absolute; top:0; bottom:0; background:rgba(255,233,77,.55); border-left:2px solid var(--yellow); border-right:2px solid var(--yellow);}
+  .pulse-marker{position:absolute; top:-3px; bottom:-3px; width:6px; background:#fff;}
+  .strike-btn{
+    display:block; margin:0 auto; width:130px; height:130px; border-radius:50%;
+    background:#000; color:var(--green); border:5px solid var(--green);
+    font-family:'Press Start 2P'; font-size:14px;
+    box-shadow:0 0 0 3px #000, 0 0 20px rgba(57,255,20,.4);
+  }
+  .strike-btn:active{transform:scale(.94);}
+  .attempt-dots{display:flex; justify-content:center; gap:6px; margin-top:16px;}
+  .attempt-dot{width:12px; height:12px; background:#1a1a1a; border:1px solid var(--dim);}
+  .attempt-dot.perfect{background:var(--yellow);}
+  .attempt-dot.good{background:var(--cyan);}
+  .attempt-dot.miss{background:#3a1010; border-color:var(--red);}
+
+  .feedback-text{position:absolute; left:50%; top:35%; transform:translate(-50%,-50%); font-family:'Press Start 2P'; font-size:16px; pointer-events:none; animation:pop .5s steps(3) forwards; z-index:5;}
+  @keyframes pop{0%{opacity:0;} 30%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-90%);}}
+
+  /* ---------- OVERLAYS ---------- */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:100; padding:16px;}
+  .modal{background:var(--panel); border:4px solid var(--green); box-shadow:0 0 0 3px #000; padding:24px 20px; width:100%; max-width:360px; text-align:center;}
+  .modal h2{font-size:15px; margin-bottom:10px; color:var(--white);}
+  .crit-label{font-family:'Press Start 2P'; font-size:11px; color:var(--yellow); margin:8px 0; text-shadow:1px 1px 0 #000;}
+  .mana-gain{font-family:'Press Start 2P'; font-size:32px; color:var(--cyan); margin:14px 0;}
+  .streak-note{color:var(--white); font-size:15px; margin-bottom:18px; font-family:'VT323';}
+  .primary-btn{width:100%; padding:12px; font-size:16px; background:var(--green); color:#000; border:3px solid #000; box-shadow:4px 4px 0 #000; font-family:'VT323'; font-weight:bold;}
+  .primary-btn:active{transform:translate(2px,2px); box-shadow:2px 2px 0 #000;}
+  .secondary-btn{width:100%; padding:10px; font-size:14px; background:#000; color:var(--dim); border:2px solid var(--dim); margin-top:8px;}
+
+  .name-input{width:100%; padding:12px; border:3px solid var(--green); background:#000; color:var(--green); font-size:18px; font-family:'VT323'; margin:16px 0; text-align:center;}
+  .name-input:focus{outline:none; border-color:var(--yellow);}
+
+  .lb-list{max-height:320px; overflow-y:auto; margin:14px 0; text-align:left;}
+  .lb-row{display:flex; align-items:center; gap:8px; padding:8px 10px; border:2px solid #1a1a1a; margin-bottom:5px;}
+  .lb-row.me{border-color:var(--green); background:rgba(57,255,20,.08);}
+  .lb-rank{font-family:'Press Start 2P'; font-size:11px; color:var(--dim); width:26px; flex-shrink:0;}
+  .lb-rank.gold{color:var(--yellow);}
+  .lb-name{flex:1; font-size:16px; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lb-mana{font-family:'Press Start 2P'; font-size:12px; color:var(--cyan);}
+  .lb-empty, .lb-loading{color:var(--dim); font-size:16px; text-align:center; padding:20px 0;}
+  .lb-setup{color:var(--yellow); font-size:15px; text-align:left; line-height:1.5; padding:10px 4px;}
+  .lb-disclosure{color:var(--dim); font-size:14px; text-align:center; margin-top:10px; line-height:1.4;}
+</style>
+</head>
+<body>
+<div id="app"><div class="crt-frame">
+
+  <!-- ===== NAME ENTRY ===== -->
+  <div id="screen-name" class="hidden">
+    <div style="min-height:70vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <h1 style="font-size:20px; line-height:1.6;">MANA<br>ARENA</h1>
+      <p style="color:var(--white); font-size:16px; margin-top:14px; max-width:260px;">4 GAMES. 1 SCORE. BEAT THE LEADERBOARD.</p>
+      <input id="name-input" class="name-input" maxlength="16" placeholder="ENTER NAME" style="max-width:260px;">
+      <button id="name-submit" class="primary-btn" style="max-width:260px;">START</button>
+      <p class="lb-disclosure" style="max-width:260px;">Your name + score are posted to a leaderboard anyone playing this game can see.</p>
+    </div>
+  </div>
+
+  <!-- ===== HUB ===== -->
+  <div id="screen-hub" class="hidden">
+    <div class="topbar">
+      <div class="streak-chip">STREAK <span id="streak-num">0</span></div>
+      <button id="open-leaderboard" class="px-btn lb-btn">LEADERBOARD</button>
+    </div>
+    <div class="title-row">
+      <h1>MANA ARENA</h1>
+      <div class="sub">PICK A GAME</div>
+    </div>
+    <div class="core-wrap">
+      <button class="core" id="core-btn">
+        <div class="mana-num num" id="hub-mana">0</div>
+        <div class="mana-lbl">TOTAL MANA</div>
+      </button>
+      <div class="core-tap-hint">TAP TO FLEX</div>
+      <div class="player-name" id="hub-name"></div>
+    </div>
+    <div class="grid">
+      <button class="game-card c1" data-game="spark">
+        <div class="icon">■</div>
+        <div class="g-name">TAP GAME</div>
+        <div class="g-best">BEST: <span id="best-spark">0</span></div>
+      </button>
+      <button class="game-card c2" data-game="dodge">
+        <div class="icon">◆</div>
+        <div class="g-name">DODGE GAME</div>
+        <div class="g-best">BEST: <span id="best-dodge">0</span></div>
+      </button>
+      <button class="game-card c3" data-game="rune">
+        <div class="icon">●</div>
+        <div class="g-name">SIMON SAYS</div>
+        <div class="g-best">BEST: <span id="best-rune">0</span></div>
+      </button>
+      <button class="game-card c4" data-game="pulse">
+        <div class="icon">▲</div>
+        <div class="g-name">TIMING GAME</div>
+        <div class="g-best">BEST: <span id="best-pulse">0</span></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== TAP GAME ===== -->
+  <div id="screen-spark" class="hidden">
+    <div class="game-hud">
+      <button class="back-btn px-btn" data-exit="spark">EXIT</button>
+      <div class="game-title">TAP GAME</div>
+      <div class="score-chip"><span id="spark-score">0</span></div>
+    </div>
+    <div class="timerbar"><div class="timerbar-fill" id="spark-timer"></div></div>
+    <div class="instructions">CLICK THE FACE. EVERY 3 CLICKS = 1 MANA</div>
+    <div style="display:flex; flex-direction:column; align-items:center; padding:30px 0;">
+      <button id="smiley-btn" class="px-btn" style="width:180px; height:180px; border-radius:50%; font-size:80px; background:#000; border:5px solid var(--green); box-shadow:0 0 0 3px #000, 0 0 20px rgba(57,255,20,.35);">🙂</button>
+      <div style="margin-top:16px; color:var(--dim); font-size:15px;">CLICKS: <span id="smiley-clicks">0</span> / 3</div>
+    </div>
+  </div>
+
+  <!-- ===== DODGE GAME ===== -->
+  <div id="screen-dodge" class="hidden">
+    <div class="game-hud">
+      <button class="back-btn px-btn" data-exit="dodge">EXIT</button>
+      <div class="game-title">DODGE GAME</div>
+      <div class="score-chip"><span id="dodge-score">0</span></div>
+    </div>
+    <div class="timerbar"><div class="timerbar-fill" id="dodge-timer"></div></div>
+    <div class="instructions">DRAG TO MOVE. DON'T GET HIT.</div>
+    <canvas id="dodge-canvas" height="300"></canvas>
+  </div>
+
+  <!-- ===== SIMON SAYS ===== -->
+  <div id="screen-rune" class="hidden">
+    <div class="game-hud">
+      <button class="back-btn px-btn" data-exit="rune">EXIT</button>
+      <div class="game-title">SIMON SAYS</div>
+      <div class="score-chip"><span id="rune-score">0</span></div>
+    </div>
+    <div class="instructions" id="rune-instructions">WATCH, THEN REPEAT</div>
+    <div class="rune-grid">
+      <button class="rune-tile tl" data-tile="0"></button>
+      <button class="rune-tile tr" data-tile="1"></button>
+      <button class="rune-tile bl" data-tile="2"></button>
+      <button class="rune-tile br" data-tile="3"></button>
+    </div>
+  </div>
+
+  <!-- ===== TIMING GAME ===== -->
+  <div id="screen-pulse" class="hidden">
+    <div class="game-hud">
+      <button class="back-btn px-btn" data-exit="pulse">EXIT</button>
+      <div class="game-title">TIMING GAME</div>
+      <div class="score-chip"><span id="pulse-score">0</span></div>
+    </div>
+    <div class="instructions">HIT STRIKE WHEN THE MARKER IS IN THE ZONE</div>
+    <div class="pulse-track" id="pulse-track">
+      <div class="pulse-zone" id="pulse-zone"></div>
+      <div class="pulse-zone-core" id="pulse-zone-core"></div>
+      <div class="pulse-marker" id="pulse-marker"></div>
+    </div>
+    <button class="strike-btn" id="pulse-strike-btn">STRIKE</button>
+    <div class="attempt-dots" id="pulse-dots"></div>
+  </div>
+
+</div></div>
+
+<!-- ===== RESULT OVERLAY ===== -->
+<div id="overlay-result" class="overlay hidden">
+  <div class="modal">
+    <h2 id="result-title">GAME OVER</h2>
+    <div class="crit-label hidden" id="result-crit"></div>
+    <div class="mana-gain num" id="result-gain">+0</div>
+    <div class="streak-note" id="result-streak"></div>
+    <button class="primary-btn" id="result-continue">CONTINUE</button>
+  </div>
+</div>
+
+<!-- ===== LEADERBOARD OVERLAY ===== -->
+<div id="overlay-lb" class="overlay hidden">
+  <div class="modal">
+    <h2>LEADERBOARD</h2>
+    <div class="lb-list" id="lb-list"><div class="lb-loading">LOADING...</div></div>
+    <button class="secondary-btn" id="lb-close">CLOSE</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================== CONFIG ============================== */
+  // Paste your Firebase Realtime Database URL here to enable a REAL, cross-device,
+  // cross-hosting leaderboard. Until you do, the game still works fully offline/solo,
+  // and the Ranks panel will show setup instructions instead of scores.
+  // Example: "https://mana-arena-default-rtdb.firebaseio.com"
+  const FIREBASE_URL = "https://leaderboard-3922b-default-rtdb.firebaseio.com";
+  function firebaseReady(){ return FIREBASE_URL && FIREBASE_URL.indexOf('PASTE_YOUR') === -1; }
+
+  // Firebase keys can't contain . # $ [ ] or / — this makes any player name safe to use as a key.
+  function sanitizeKey(name){
+    return name.replace(/[.#$\[\]\/]/g, '_').slice(0,64) || 'player';
+  }
+
+  /* ============================== STORAGE (works on Claude AND hosted elsewhere) ============================== */
+  const hasClaudeStorage = (typeof window.storage !== 'undefined' && typeof window.storage.get === 'function');
+
+  async function storeGet(key){
+    if(hasClaudeStorage){
+      try{ const r = await window.storage.get(key, false); return r ? r.value : null; }catch(e){ return null; }
+    }
+    try{ return localStorage.getItem(key); }catch(e){ return null; }
+  }
+  async function storeSet(key, val){
+    if(hasClaudeStorage){
+      try{ await window.storage.set(key, val, false); }catch(e){ console.error(e); }
+      return;
+    }
+    try{ localStorage.setItem(key, val); }catch(e){ console.error(e); }
+  }
+
+  async function pushLeaderboard(){
+    if(!firebaseReady()) return;
+    try{
+      const key = encodeURIComponent(sanitizeKey(state.name));
+      await fetch(FIREBASE_URL + '/leaderboard/' + key + '.json', {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({name:state.name, mana:state.totalMana, updated:Date.now()})
+      });
+    }catch(e){ console.error('leaderboard push failed', e); }
+  }
+  async function fetchLeaderboard(){
+    const res = await fetch(FIREBASE_URL + '/leaderboard.json');
+    const data = await res.json();
+    if(!data) return [];
+    return Object.values(data);
+  }
+
+  /* ============================== STATE ============================== */
+  let state = null;
+  const todayStr = () => new Date().toISOString().slice(0,10);
+
+  function defaultState(name){
+    return { name, totalMana:0, streak:0, lastPlayedDate:null, bestScores:{spark:0,dodge:0,rune:0,pulse:0} };
+  }
+  async function loadState(){
+    const raw = await storeGet('player-state');
+    if(raw){ try{ state = JSON.parse(raw); return true; }catch(e){ return false; } }
+    return false;
+  }
+  async function saveState(){ await storeSet('player-state', JSON.stringify(state)); }
+
+  /* ============================== SCREEN NAV ============================== */
+  const screens = ['name','hub','spark','dodge','rune','pulse'];
+  function show(id){ screens.forEach(s => document.getElementById('screen-'+s).classList.toggle('hidden', s!==id)); }
+
+  function refreshHub(){
+    document.getElementById('hub-mana').textContent = state.totalMana;
+    document.getElementById('hub-name').textContent = state.name;
+    document.getElementById('streak-num').textContent = state.streak;
+    document.getElementById('best-spark').textContent = state.bestScores.spark;
+    document.getElementById('best-dodge').textContent = state.bestScores.dodge;
+    document.getElementById('best-rune').textContent = state.bestScores.rune;
+    document.getElementById('best-pulse').textContent = state.bestScores.pulse;
+  }
+
+  /* ============================== CORE FLEX / SHOCKWAVE ============================== */
+  let coreCooldown = false;
+  document.getElementById('core-btn').addEventListener('click', (e)=>{
+    if(coreCooldown) return;
+    coreCooldown = true;
+    setTimeout(()=> coreCooldown = false, 500);
+
+    const core = document.getElementById('core-btn');
+    core.classList.add('flexing');
+    setTimeout(()=> core.classList.remove('flexing'), 220);
+
+    const rect = core.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    for(let i=0;i<2;i++){
+      setTimeout(()=>{
+        const ring = document.createElement('div');
+        ring.className = 'shockwave';
+        ring.style.left = cx+'px';
+        ring.style.top = cy+'px';
+        document.body.appendChild(ring);
+        setTimeout(()=> ring.remove(), 850);
+      }, i*120);
+    }
+  });
+
+  /* ============================== CRIT / STREAK ============================== */
+  function rollCrit(){
+    const r = Math.random();
+    if(r < 0.04) return {mult:3, label:'x3 BONUS MANA'};
+    if(r < 0.20) return {mult:2, label:'x2 BONUS MANA'};
+    return {mult:1, label:null};
+  }
+  function applyStreak(){
+    const today = todayStr();
+    let note;
+    if(state.lastPlayedDate === today){
+      note = 'STREAK: ' + state.streak + ' DAYS';
+    } else {
+      const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+      state.streak = (state.lastPlayedDate === yest) ? state.streak + 1 : 1;
+      state.lastPlayedDate = today;
+      note = 'STREAK DAY ' + state.streak + '! +' + Math.round(Math.min(state.streak,20)*3) + '% BONUS';
+    }
+    return note;
+  }
+  function streakMult(){ return 1 + Math.min(state.streak,20)*0.03; }
+
+  /* ============================== RESULT FLOW ============================== */
+  function finishGame(gameKey, baseScore, resultTitle){
+    const crit = rollCrit();
+    const sMult = streakMult();
+    const gain = Math.max(0, Math.round(baseScore * crit.mult * sMult));
+
+    document.getElementById('result-title').textContent = resultTitle;
+    const critEl = document.getElementById('result-crit');
+    if(crit.label){ critEl.textContent = crit.label; critEl.classList.remove('hidden'); }
+    else critEl.classList.add('hidden');
+
+    const gainEl = document.getElementById('result-gain');
+    gainEl.textContent = '+0';
+    document.getElementById('overlay-result').classList.remove('hidden');
+
+    let start = null; const dur = 600;
+    function step(ts){
+      if(!start) start = ts;
+      const p = Math.min(1, (ts-start)/dur);
+      gainEl.textContent = '+' + Math.round(gain * p);
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+
+    document.getElementById('result-streak').textContent = applyStreak();
+
+    state.totalMana += gain;
+    if(gain > state.bestScores[gameKey]) state.bestScores[gameKey] = gain;
+    saveState();
+    pushLeaderboard();
+  }
+
+  document.getElementById('result-continue').addEventListener('click', ()=>{
+    document.getElementById('overlay-result').classList.add('hidden');
+    refreshHub();
+    show('hub');
+  });
+
+  /* ============================== NAME ENTRY ============================== */
+  document.getElementById('name-submit').addEventListener('click', submitName);
+  document.getElementById('name-input').addEventListener('keydown', e=>{ if(e.key==='Enter') submitName(); });
+  async function submitName(){
+    const val = document.getElementById('name-input').value.trim().slice(0,16);
+    if(!val) return;
+    state = defaultState(val);
+    await saveState();
+    await pushLeaderboard();
+    refreshHub();
+    show('hub');
+  }
+
+  /* ============================== HUB NAV ============================== */
+  let activeSession = 0; // cancels stale game loops when switching screens
+  document.querySelectorAll('.game-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      activeSession++;
+      const g = card.dataset.game;
+      show(g);
+      if(g==='spark') startSpark(activeSession);
+      if(g==='dodge') startDodge(activeSession);
+      if(g==='rune') startRune(activeSession);
+      if(g==='pulse') startPulse(activeSession);
+    });
+  });
+  document.querySelectorAll('[data-exit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      activeSession++;
+      refreshHub();
+      show('hub');
+    });
+  });
+
+  /* ============================== LEADERBOARD ============================== */
+  document.getElementById('open-leaderboard').addEventListener('click', openLeaderboard);
+  document.getElementById('lb-close').addEventListener('click', ()=> document.getElementById('overlay-lb').classList.add('hidden'));
+
+  async function openLeaderboard(){
+    document.getElementById('overlay-lb').classList.remove('hidden');
+    const listEl = document.getElementById('lb-list');
+
+    if(!firebaseReady()){
+      listEl.innerHTML =
+        '<div class="lb-setup">LEADERBOARD NOT SET UP YET.<br><br>'+
+        '1. Create a free Firebase project<br>'+
+        '2. Add a Realtime Database<br>'+
+        '3. Copy its URL<br>'+
+        '4. Paste it into FIREBASE_URL near the top of the code<br><br>'+
+        'Ask me and I\'ll walk you through it step by step.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '<div class="lb-loading">LOADING...</div>';
+    try{
+      const entries = await fetchLeaderboard();
+      if(entries.length === 0){ listEl.innerHTML = '<div class="lb-empty">NO PLAYERS YET. BE THE FIRST!</div>'; return; }
+      entries.sort((a,b)=> b.mana - a.mana);
+      listEl.innerHTML = '';
+      entries.slice(0,15).forEach((e,i)=>{
+        const row = document.createElement('div');
+        row.className = 'lb-row' + (e.name===state.name ? ' me' : '');
+        row.innerHTML = '<div class="lb-rank '+(i<3?'gold':'')+'">'+(i+1)+'</div><div class="lb-name">'+escapeHtml(e.name)+'</div><div class="lb-mana">'+e.mana+'</div>';
+        listEl.appendChild(row);
+      });
+      const myRank = entries.findIndex(e=>e.name===state.name);
+      if(myRank >= 15){
+        const row = document.createElement('div');
+        row.className = 'lb-row me';
+        row.innerHTML = '<div class="lb-rank gold">'+(myRank+1)+'</div><div class="lb-name">'+escapeHtml(state.name)+' (YOU)</div><div class="lb-mana">'+state.totalMana+'</div>';
+        listEl.appendChild(row);
+      }
+    }catch(e){
+      listEl.innerHTML = '<div class="lb-empty">COULD NOT LOAD RANKS.</div>';
+    }
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  /* ============================== TAP GAME (simple clicker: 3 clicks = 1 mana) ============================== */
+  function startSpark(session){
+    const oldBtn = document.getElementById('smiley-btn');
+    const smiley = oldBtn.cloneNode(true); // wipes any old listeners from previous rounds
+    oldBtn.replaceWith(smiley);
+
+    let clicks = 0, mana = 0;
+    const DURATION = 15000;
+    const startTime = performance.now();
+    document.getElementById('spark-score').textContent = '0';
+    document.getElementById('smiley-clicks').textContent = '0';
+
+    function onClick(){
+      if(activeSession !== session) return;
+      clicks++;
+      smiley.style.transform = 'scale(.88)';
+      setTimeout(()=>{ smiley.style.transform = 'scale(1)'; }, 90);
+
+      const remainder = clicks % 3;
+      document.getElementById('smiley-clicks').textContent = (remainder===0?3:remainder);
+      if(remainder === 0){
+        mana++;
+        document.getElementById('spark-score').textContent = mana;
+      }
+    }
+    smiley.addEventListener('pointerdown', onClick);
+
+    function loop(ts){
+      if(activeSession !== session) return; // exited or switched games
+      const elapsed = ts - startTime;
+      const pct = Math.max(0, 1 - elapsed/DURATION);
+      document.getElementById('spark-timer').style.width = (pct*100)+'%';
+
+      if(elapsed >= DURATION){
+        finishGame('spark', mana, 'TAP GAME DONE');
+        return;
+      }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  /* ============================== DODGE GAME ============================== */
+  function startDodge(session){
+    const oldCanvas = document.getElementById('dodge-canvas');
+    const canvas = oldCanvas.cloneNode(true);
+    oldCanvas.replaceWith(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    canvas.width = canvas.clientWidth || 300;
+    canvas.height = 300;
+
+    let player = {x: canvas.width/2, y: canvas.height-30, size:22};
+    let shards = [];
+    const startTime = performance.now();
+    let lastSpawn = 0;
+    let score = 0, nearMiss = 0;
+    const MAXTIME = 26000;
+    document.getElementById('dodge-score').textContent = '0';
+
+    function setX(clientX){
+      const rect = canvas.getBoundingClientRect();
+      const scaled = (clientX-rect.left) * (canvas.width/rect.width);
+      player.x = Math.max(player.size, Math.min(canvas.width-player.size, scaled));
+    }
+    canvas.addEventListener('pointermove', e=>{ if(activeSession===session) setX(e.clientX); });
+    canvas.addEventListener('pointerdown', e=>{ if(activeSession===session) setX(e.clientX); });
+
+    function loop(ts){
+      if(activeSession !== session) return;
+      const elapsed = ts - startTime;
+      const pct = Math.max(0, 1 - elapsed/MAXTIME);
+      document.getElementById('dodge-timer').style.width = (pct*100)+'%';
+      const difficulty = Math.min(1, elapsed/18000);
+
+      if(ts - lastSpawn > (700 - difficulty*450)){
+        shards.push({x: 20+Math.random()*(canvas.width-40), y:-10, size:20+Math.random()*14, spd:2.2+difficulty*3.2+Math.random()*1.5, passed:false});
+        lastSpawn = ts;
+      }
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#2de2ff';
+      ctx.fillRect(player.x-player.size/2, player.y-player.size/2, player.size, player.size);
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+      ctx.strokeRect(player.x-player.size/2, player.y-player.size/2, player.size, player.size);
+
+      let dead = false;
+      shards.forEach(s=>{
+        s.y += s.spd;
+        ctx.fillStyle = '#ff3fa4';
+        ctx.fillRect(s.x-s.size/2, s.y-s.size/2, s.size, s.size);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.strokeRect(s.x-s.size/2, s.y-s.size/2, s.size, s.size);
+        const dx = Math.abs(s.x-player.x), dy = Math.abs(s.y-player.y);
+        if(dx < (s.size+player.size)/2 - 4 && dy < (s.size+player.size)/2 - 4) dead = true;
+        else if(!s.passed && dy < (s.size+player.size)/2 + 14 && s.y > player.y - 20){ s.passed = true; nearMiss++; }
+      });
+      shards = shards.filter(s => s.y < canvas.height+20);
+
+      score = Math.floor(elapsed/1000)*3 + nearMiss;
+      document.getElementById('dodge-score').textContent = score;
+
+      if(dead || elapsed >= MAXTIME){
+        finishGame('dodge', score, dead ? 'YOU GOT HIT' : 'DODGE COMPLETE');
+        return;
+      }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  /* ============================== SIMON SAYS ============================== */
+  let runeSession = 0, runeAccepting = false, runeSeq = [], runePlayerIdx = 0, runeScore = 0;
+  const runeTilesEls = () => Array.from(document.querySelectorAll('.rune-tile'));
+  function startRune(session){
+    runeSession = session;
+    runeSeq = []; runePlayerIdx = 0; runeScore = 0; runeAccepting = false;
+    document.getElementById('rune-score').textContent = '0';
+    document.getElementById('rune-instructions').textContent = 'WATCH CLOSELY...';
+    nextRuneRound();
+  }
+  function nextRuneRound(){
+    if(activeSession !== runeSession) return;
+    runeSeq.push(Math.floor(Math.random()*4));
+    runePlayerIdx = 0;
+    runeAccepting = false;
+    playRuneSequence();
+  }
+  async function playRuneSequence(){
+    document.getElementById('rune-instructions').textContent = 'WATCH CLOSELY...';
+    await sleep(500);
+    for(let i=0;i<runeSeq.length;i++){
+      if(activeSession !== runeSession) return;
+      await flashTile(runeSeq[i]);
+      await sleep(Math.max(140, 320 - runeSeq.length*6));
+    }
+    if(activeSession !== runeSession) return;
+    document.getElementById('rune-instructions').textContent = 'YOUR TURN';
+    runeAccepting = true;
+  }
+  function flashTile(idx){
+    return new Promise(res=>{
+      const t = runeTilesEls()[idx];
+      t.classList.add('active');
+      setTimeout(()=>{ t.classList.remove('active'); res(); }, Math.max(220, 380 - runeSeq.length*6));
+    });
+  }
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+  runeTilesEls().forEach((t,i)=>{
+    t.addEventListener('click', ()=>{
+      if(!runeAccepting || activeSession !== runeSession) return;
+      t.classList.add('active'); setTimeout(()=>t.classList.remove('active'),140);
+      if(i === runeSeq[runePlayerIdx]){
+        runePlayerIdx++;
+        if(runePlayerIdx === runeSeq.length){
+          runeAccepting = false;
+          runeScore += 5 * runeSeq.length;
+          document.getElementById('rune-score').textContent = runeScore;
+          if(runeSeq.length >= 14){
+            finishGame('rune', runeScore, 'SIMON SAYS DONE');
+          } else {
+            document.getElementById('rune-instructions').textContent = 'CORRECT! NEXT...';
+            setTimeout(nextRuneRound, 700);
+          }
+        }
+      } else {
+        runeAccepting = false;
+        document.getElementById('rune-instructions').textContent = 'WRONG!';
+        finishGame('rune', runeScore, 'SIMON SAYS DONE');
+      }
+    });
+  });
+
+  /* ============================== TIMING GAME ============================== */
+  let pulseSession = 0, pulseAttempts = 0, pulseScore = 0, pulseCombo = 0, pulseZonePos = 0.5, pulseZoneWidth = 0.24, pulseSpeed = 1.3, pulseCanStrike = true;
+  function startPulse(session){
+    pulseSession = session;
+    pulseAttempts = 0; pulseScore = 0; pulseCombo = 0; pulseZoneWidth = 0.24; pulseSpeed = 1.3; pulseCanStrike = true;
+    document.getElementById('pulse-score').textContent = '0';
+    document.getElementById('pulse-dots').innerHTML = '';
+    newPulseZone();
+    const startTs = performance.now();
+    function loop(ts){
+      if(activeSession !== pulseSession) return;
+      const t = (ts-startTs)/1000 * pulseSpeed;
+      const pos = (Math.sin(t) + 1) / 2;
+      const track = document.getElementById('pulse-track');
+      const w = track.clientWidth;
+      document.getElementById('pulse-marker').style.left = (pos*w)+'px';
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+  function newPulseZone(){
+    pulseZonePos = 0.15 + Math.random()*0.7;
+    const track = document.getElementById('pulse-track');
+    const w = track.clientWidth || 300;
+    const zone = document.getElementById('pulse-zone');
+    const core = document.getElementById('pulse-zone-core');
+    zone.style.left = ((pulseZonePos - pulseZoneWidth/2)*w)+'px';
+    zone.style.width = (pulseZoneWidth*w)+'px';
+    core.style.left = ((pulseZonePos - pulseZoneWidth*0.28)*w)+'px';
+    core.style.width = (pulseZoneWidth*0.56*w)+'px';
+  }
+  document.getElementById('pulse-strike-btn').addEventListener('click', pulseStrike);
+  document.addEventListener('keydown', e=>{
+    if(e.code==='Space' && activeSession===pulseSession && !document.getElementById('screen-pulse').classList.contains('hidden')){
+      e.preventDefault(); pulseStrike();
+    }
+  });
+  function pulseStrike(){
+    if(activeSession !== pulseSession || !pulseCanStrike) return;
+    pulseCanStrike = false; setTimeout(()=>pulseCanStrike=true, 160);
+
+    const marker = document.getElementById('pulse-marker');
+    const track = document.getElementById('pulse-track');
+    const w = track.clientWidth;
+    const markerPos = (parseFloat(marker.style.left)||0) / w;
+    const dist = Math.abs(markerPos - pulseZonePos);
+
+    let type, gain;
+    if(dist < pulseZoneWidth*0.28){ type='perfect'; pulseCombo++; gain = Math.round(4*(1+pulseCombo*0.12)); }
+    else if(dist < pulseZoneWidth/2){ type='good'; pulseCombo++; gain = Math.round(2*(1+pulseCombo*0.08)); }
+    else { type='miss'; pulseCombo = 0; gain = 0; }
+
+    pulseScore += gain;
+    document.getElementById('pulse-score').textContent = pulseScore;
+    showFeedback(track, type==='perfect'?'PERFECT':(type==='good'?'GOOD':'MISS'), type);
+
+    const dot = document.createElement('div');
+    dot.className = 'attempt-dot ' + type;
+    document.getElementById('pulse-dots').appendChild(dot);
+
+    pulseAttempts++;
+    pulseZoneWidth = Math.max(0.13, pulseZoneWidth - 0.01);
+    pulseSpeed = Math.min(2.6, pulseSpeed + 0.06);
+    newPulseZone();
+
+    if(pulseAttempts >= 10){
+      finishGame('pulse', pulseScore, 'TIMING GAME DONE');
+    }
+  }
+  function showFeedback(container, text, type){
+    const el = document.createElement('div');
+    el.className = 'feedback-text';
+    el.style.color = type==='perfect' ? '#ffe94d' : (type==='good' ? '#2de2ff' : '#ff4d4d');
+    el.textContent = text;
+    container.style.position = container.style.position || 'relative';
+    container.appendChild(el);
+    setTimeout(()=> el.remove(), 500);
+  }
+
+  /* ============================== BOOT ============================== */
+  async function boot(){
+    const has = await loadState();
+    if(has){ refreshHub(); show('hub'); }
+    else show('name');
+  }
+  boot();
+
+})();
+</script>
+</body>
+</html>
