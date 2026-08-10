@@ -72,6 +72,15 @@
     padding:6px 10px;
   }
   .lb-btn{color:var(--pink); border-color:var(--pink);}
+ .music-btn{color:var(--cyan); border-color:var(--cyan); font-size:15px; padding:6px 10px;}
+  .vol-wrap{width:38px; height:38px; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .vol-slider{
+    -webkit-appearance:none; appearance:none;
+    width:38px; height:4px; background:var(--dim); outline:none; cursor:pointer;
+    transform:rotate(-90deg);
+  }
+  .vol-slider::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px; background:var(--cyan); border:2px solid #000; border-radius:50%;}
+  .vol-slider::-moz-range-thumb{width:14px; height:14px; background:var(--cyan); border:2px solid #000; border-radius:50%; cursor:pointer;}
 
   /* ---------- HUB ---------- */
   .title-row{text-align:center; margin-bottom:10px;}
@@ -108,7 +117,10 @@
   }
 
   /* ---------- MINIGAME GRID ---------- */
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; height:300px; overflow-y:scroll; padding-right:4px; align-content:start; -webkit-overflow-scrolling:touch;}
+  .grid::-webkit-scrollbar{width:8px;}
+  .grid::-webkit-scrollbar-track{background:#000;}
+  .grid::-webkit-scrollbar-thumb{background:var(--dim); border:1px solid #000;}
   .game-card{
     background:#000; border:3px solid var(--dim); color:var(--white);
     padding:14px 10px; text-align:left; display:flex; flex-direction:column; gap:6px; min-height:98px;
@@ -122,6 +134,8 @@
   .game-card.c2{border-color:var(--cyan); color:var(--cyan);}
   .game-card.c3{border-color:var(--yellow); color:var(--yellow);}
   .game-card.c4{border-color:var(--pink); color:var(--pink);}
+  .game-card.c5{border-color:var(--white); color:var(--white);}
+  .game-card.disabled{opacity:.35; pointer-events:none;}
 
   /* ---------- GAME SCREEN ---------- */
   .game-hud{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:6px;}
@@ -131,6 +145,15 @@
   .timerbar{height:10px; background:#000; border:2px solid var(--dim); overflow:hidden; margin-bottom:12px;}
   .timerbar-fill{height:100%; background:var(--green); width:100%;}
   .instructions{text-align:center; color:var(--white); font-size:16px; margin-bottom:10px; min-height:20px;}
+
+  /* Tap Game moving button */
+  .spark-area{position:relative; height:260px; margin:10px 0;}
+  .spark-btn{
+    position:absolute; width:110px; height:110px; border-radius:50%; font-size:56px;
+    background:#000; border:5px solid var(--green); color:var(--green);
+    box-shadow:0 0 0 3px #000, 0 0 20px rgba(57,255,20,.35);
+    transition: left .12s ease, top .12s ease;
+  }
 
   canvas{width:100%; display:block; background:#000; border:3px solid var(--dim); touch-action:none;}
 
@@ -162,6 +185,11 @@
   .attempt-dot.miss{background:#3a1010; border-color:var(--red);}
 
   .feedback-text{position:absolute; left:50%; top:35%; transform:translate(-50%,-50%); font-family:'Press Start 2P'; font-size:16px; pointer-events:none; animation:pop .5s steps(3) forwards; z-index:5;}
+
+  .type-area{position:relative; height:260px; margin:10px 0; background:#000; border:3px solid var(--dim); overflow:hidden;}
+  .type-word{position:absolute; left:50%; top:0; transform:translateX(-50%); font-family:'Press Start 2P'; font-size:16px; white-space:nowrap;}
+  .type-word .typed{color:var(--green);}
+  .type-word .pending{color:var(--white);}
   @keyframes pop{0%{opacity:0;} 30%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-90%);}}
 
   /* ---------- OVERLAYS ---------- */
@@ -188,6 +216,66 @@
   .lb-empty, .lb-loading{color:var(--dim); font-size:16px; text-align:center; padding:20px 0;}
   .lb-setup{color:var(--yellow); font-size:15px; text-align:left; line-height:1.5; padding:10px 4px;}
   .lb-disclosure{color:var(--dim); font-size:14px; text-align:center; margin-top:10px; line-height:1.4;}
+
+  /* Gamble button + slot machine */
+  .gamble-btn{color:var(--yellow); border-color:var(--yellow); font-size:16px; padding:6px 10px;}
+  .slot-machine{
+    position:relative; overflow:hidden;
+    background: linear-gradient(180deg, #1a0f00 0%, #050300 55%, #000 100%);
+    border:4px solid var(--yellow); border-radius:4px;
+    padding:22px 14px 20px;
+    margin:16px 0;
+    box-shadow:0 0 0 3px #000, 0 0 28px rgba(255,233,77,.35), inset 0 0 24px rgba(255,233,77,.06);
+  }
+  .slot-lights{display:flex; justify-content:space-between; padding:0 2px; margin-bottom:16px;}
+  .slot-lights span{
+    width:8px; height:8px; border-radius:50%; display:inline-block;
+    animation: light-chase 1s steps(2) infinite;
+  }
+  .slot-lights span:nth-child(odd){ background:var(--yellow); box-shadow:0 0 8px var(--yellow); }
+  .slot-lights span:nth-child(even){ background:var(--pink); box-shadow:0 0 8px var(--pink); animation-delay:.25s; }
+  @keyframes light-chase{ 50%{opacity:.2;} }
+  .slot-machine.jackpot-flash{ animation: jackpot-bg .35s steps(2) 3; }
+  @keyframes jackpot-bg{ 50%{ box-shadow:0 0 0 3px #000, 0 0 55px rgba(255,233,77,.9), inset 0 0 40px rgba(255,233,77,.3); } }
+
+  .reel-row{display:flex; justify-content:center; gap:10px;}
+  .reel{
+    width:78px; height:86px; border-radius:6px; position:relative;
+    background:linear-gradient(180deg,#242424 0%, #060606 55%, #000 100%);
+    border:3px solid var(--dim);
+    display:flex; align-items:center; justify-content:center; font-size:40px;
+    box-shadow: inset 0 6px 12px rgba(0,0,0,.7), inset 0 -3px 6px rgba(255,255,255,.04);
+  }
+  .reel::after{
+    content:''; position:absolute; inset:0; border-radius:4px; pointer-events:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.10), transparent 45%);
+  }
+  .reel.spin{
+    filter:blur(1.5px);
+    animation: reel-shake .07s linear infinite;
+    box-shadow: inset 0 6px 12px rgba(0,0,0,.7), 0 0 16px rgba(255,233,77,.55);
+    border-color:var(--yellow);
+  }
+  @keyframes reel-shake{0%{transform:translateY(0);}50%{transform:translateY(-5px);}100%{transform:translateY(0);}}
+  .slots-cost{text-align:center; color:var(--dim); font-size:14px; margin:8px 0 16px;}
+  .slots-result{text-align:center; font-size:17px; min-height:26px; margin:14px 0; font-family:'Press Start 2P'; letter-spacing:.02em;}
+  .slots-result.jackpot{ animation: jackpot-pulse .5s ease-in-out infinite alternate; text-shadow:0 0 8px currentColor, 0 0 18px currentColor; }
+  @keyframes jackpot-pulse{ from{transform:scale(1);} to{transform:scale(1.07);} }
+  .banner-shelf{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:18px;}
+  .banner-chip{
+    border:2px solid var(--dim); color:var(--dim); font-size:13px; padding:6px 10px;
+    font-family:'VT323'; border-radius:4px; background:#0a0a0a; transition: box-shadow .2s ease;
+  }
+  .banner-chip.owned{ background:rgba(255,255,255,.04); box-shadow:0 0 10px currentColor; }
+  .lb-banner{margin-right:4px;}
+  .confetti-bit{
+    position:absolute; top:10%; width:6px; height:10px; opacity:.9; pointer-events:none;
+    animation: confetti-fall 1.1s ease-in forwards;
+  }
+  @keyframes confetti-fall{
+    0%{ transform:translateY(0) translateX(0) rotate(0deg); opacity:1; }
+    100%{ transform:translateY(160px) translateX(calc(var(--dx,0) * 40px)) rotate(360deg); opacity:0; }
+  }
 </style>
 </head>
 <body>
@@ -208,6 +296,9 @@
   <div id="screen-hub" class="hidden">
     <div class="topbar">
       <div class="streak-chip">STREAK <span id="streak-num">0</span></div>
+      <button id="toggle-music" class="px-btn music-btn">🎵</button>
+      <div class="vol-wrap"><input id="music-volume" class="vol-slider" type="range" min="0" max="100" value="60"></div>
+      <button id="open-slots" class="px-btn gamble-btn">🎰</button>
       <button id="open-leaderboard" class="px-btn lb-btn">LEADERBOARD</button>
     </div>
     <div class="title-row">
@@ -243,6 +334,11 @@
         <div class="g-name">TIMING GAME</div>
         <div class="g-best">BEST: <span id="best-pulse">0</span></div>
       </button>
+      <button class="game-card c5" data-game="type" id="card-type">
+        <div class="icon">⌨</div>
+        <div class="g-name">WORD DROP</div>
+        <div class="g-best" id="type-best-row">BEST: <span id="best-type">0</span></div>
+      </button>
     </div>
   </div>
 
@@ -254,11 +350,11 @@
       <div class="score-chip"><span id="spark-score">0</span></div>
     </div>
     <div class="timerbar"><div class="timerbar-fill" id="spark-timer"></div></div>
-    <div class="instructions">CLICK THE FACE. EVERY 3 CLICKS = 1 MANA</div>
-    <div style="display:flex; flex-direction:column; align-items:center; padding:30px 0;">
-      <button id="smiley-btn" class="px-btn" style="width:180px; height:180px; border-radius:50%; font-size:80px; background:#000; border:5px solid var(--green); box-shadow:0 0 0 3px #000, 0 0 20px rgba(57,255,20,.35);">🙂</button>
-      <div style="margin-top:16px; color:var(--dim); font-size:15px;">CLICKS: <span id="smiley-clicks">0</span> / 3</div>
+    <div class="instructions">TAP THE FACE. IT MOVES EVERY TAP. 2 TAPS = 1 MANA</div>
+    <div class="spark-area" id="spark-area">
+      <button id="smiley-btn" class="spark-btn">🙂</button>
     </div>
+    <div style="text-align:center; margin-top:6px; color:var(--dim); font-size:15px;">CLICKS: <span id="smiley-clicks">0</span> / 2</div>
   </div>
 
   <!-- ===== DODGE GAME ===== -->
@@ -280,6 +376,7 @@
       <div class="game-title">SIMON SAYS</div>
       <div class="score-chip"><span id="rune-score">0</span></div>
     </div>
+    <div style="text-align:center; color:var(--dim); font-size:15px; margin-bottom:6px;">ROUND <span id="rune-round">0</span></div>
     <div class="instructions" id="rune-instructions">WATCH, THEN REPEAT</div>
     <div class="rune-grid">
       <button class="rune-tile tl" data-tile="0"></button>
@@ -296,7 +393,7 @@
       <div class="game-title">TIMING GAME</div>
       <div class="score-chip"><span id="pulse-score">0</span></div>
     </div>
-    <div class="instructions">HIT STRIKE WHEN THE MARKER IS IN THE ZONE</div>
+    <div class="instructions">HIT STRIKE WHEN THE MARKER IS IN THE ZONE. IT SPEEDS UP EVERY HIT.</div>
     <div class="pulse-track" id="pulse-track">
       <div class="pulse-zone" id="pulse-zone"></div>
       <div class="pulse-zone-core" id="pulse-zone-core"></div>
@@ -304,6 +401,44 @@
     </div>
     <button class="strike-btn" id="pulse-strike-btn">STRIKE</button>
     <div class="attempt-dots" id="pulse-dots"></div>
+  </div>
+
+  <!-- ===== WORD DROP (keyboard) ===== -->
+  <div id="screen-type" class="hidden">
+    <div class="game-hud">
+      <button class="back-btn px-btn" data-exit="type">EXIT</button>
+      <div class="game-title">WORD DROP</div>
+      <div class="score-chip"><span id="type-score">0</span></div>
+    </div>
+    <div class="timerbar"><div class="timerbar-fill" id="type-timer"></div></div>
+    <div class="instructions">TYPE THE FALLING WORD BEFORE IT HITS BOTTOM</div>
+    <div class="type-area" id="type-area">
+      <div class="type-word" id="type-word"></div>
+    </div>
+  </div>
+
+  <!-- ===== SLOT MACHINE ===== -->
+  <div id="screen-slots" class="hidden">
+    <div class="game-hud">
+      <button class="back-btn px-btn" data-exit="slots">EXIT</button>
+      <div class="game-title">GAMBLE</div>
+      <div class="score-chip">💰 <span id="slots-mana">0</span></div>
+    </div>
+    <div class="instructions">SPIN TO UNLOCK BANNERS EVERYONE SEES ON THE LEADERBOARD</div>
+    <div class="slot-machine" id="slot-machine">
+      <div class="slot-lights">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="reel-row" id="slot-reels">
+        <div class="reel" id="reel-0">🍀</div>
+        <div class="reel" id="reel-1">🍀</div>
+        <div class="reel" id="reel-2">🍀</div>
+      </div>
+    </div>
+    <div class="slots-cost">COST: 40 MANA PER SPIN</div>
+    <button class="primary-btn" id="slots-spin-btn">SPIN</button>
+    <div class="slots-result" id="slots-result"></div>
+    <div class="banner-shelf" id="banner-shelf"></div>
   </div>
 
 </div></div>
@@ -332,11 +467,14 @@
 (function(){
   "use strict";
 
+  window.addEventListener('unhandledrejection', function(ev){
+    console.warn('Suppressed background error:', ev.reason);
+    ev.preventDefault();
+  });
+
   /* ============================== CONFIG ============================== */
-  // Paste your Firebase Realtime Database URL here to enable a REAL, cross-device,
-  // cross-hosting leaderboard. Until you do, the game still works fully offline/solo,
-  // and the Ranks panel will show setup instructions instead of scores.
-  // Example: "https://mana-arena-default-rtdb.firebaseio.com"
+  // Your Firebase Realtime Database URL. This is the ONLY place scores/leaderboard data
+  // are stored — everything goes straight to Firebase, nothing touches Claude's storage.
   const FIREBASE_URL = "https://leaderboard-3922b-default-rtdb.firebaseio.com";
   function firebaseReady(){ return FIREBASE_URL && FIREBASE_URL.indexOf('PASTE_YOUR') === -1; }
 
@@ -345,39 +483,37 @@
     return name.replace(/[.#$\[\]\/]/g, '_').slice(0,64) || 'player';
   }
 
-  /* ============================== STORAGE (works on Claude AND hosted elsewhere) ============================== */
-  const hasClaudeStorage = (typeof window.storage !== 'undefined' && typeof window.storage.get === 'function');
-
+  /* ============================== STORAGE ============================== */
+  // Personal save data (your name, mana, streak, best scores, owned banners) lives in
+  // this browser's localStorage only. The shared leaderboard lives in Firebase only.
+  // Nothing in this game ever calls Claude's window.storage / asks for "shared data"
+  // permission — it's 100% your own Firebase project.
   async function storeGet(key){
-    if(hasClaudeStorage){
-      try{ const r = await window.storage.get(key, false); return r ? r.value : null; }catch(e){ return null; }
-    }
     try{ return localStorage.getItem(key); }catch(e){ return null; }
   }
   async function storeSet(key, val){
-    if(hasClaudeStorage){
-      try{ await window.storage.set(key, val, false); }catch(e){ console.error(e); }
-      return;
-    }
-    try{ localStorage.setItem(key, val); }catch(e){ console.error(e); }
+    try{ localStorage.setItem(key, val); }catch(e){ console.error('localStorage save failed', e); }
   }
 
   async function pushLeaderboard(){
     if(!firebaseReady()) return;
+    const key = sanitizeKey(state.name);
+    const entry = {name:state.name, mana:state.totalMana, updated:Date.now(), banner: bestBannerId(state.banners)};
     try{
-      const key = encodeURIComponent(sanitizeKey(state.name));
-      await fetch(FIREBASE_URL + '/leaderboard/' + key + '.json', {
+      await fetch(FIREBASE_URL + '/leaderboard/' + encodeURIComponent(key) + '.json', {
         method:'PUT',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({name:state.name, mana:state.totalMana, updated:Date.now()})
+        body: JSON.stringify(entry)
       });
-    }catch(e){ console.error('leaderboard push failed', e); }
+    }catch(e){ console.warn('leaderboard push failed', e); }
   }
   async function fetchLeaderboard(){
-    const res = await fetch(FIREBASE_URL + '/leaderboard.json');
-    const data = await res.json();
-    if(!data) return [];
-    return Object.values(data);
+    if(!firebaseReady()) return [];
+    try{
+      const res = await fetch(FIREBASE_URL + '/leaderboard.json');
+      const data = await res.json();
+      return data ? Object.values(data) : [];
+    }catch(e){ return []; }
   }
 
   /* ============================== STATE ============================== */
@@ -385,7 +521,7 @@
   const todayStr = () => new Date().toISOString().slice(0,10);
 
   function defaultState(name){
-    return { name, totalMana:0, streak:0, lastPlayedDate:null, bestScores:{spark:0,dodge:0,rune:0,pulse:0} };
+    return { name, totalMana:0, streak:0, lastPlayedDate:null, bestScores:{spark:0,dodge:0,rune:0,pulse:0,type:0}, banners:[] };
   }
   async function loadState(){
     const raw = await storeGet('player-state');
@@ -395,7 +531,7 @@
   async function saveState(){ await storeSet('player-state', JSON.stringify(state)); }
 
   /* ============================== SCREEN NAV ============================== */
-  const screens = ['name','hub','spark','dodge','rune','pulse'];
+  const screens = ['name','hub','spark','dodge','rune','pulse','type','slots'];
   function show(id){ screens.forEach(s => document.getElementById('screen-'+s).classList.toggle('hidden', s!==id)); }
 
   function refreshHub(){
@@ -406,6 +542,7 @@
     document.getElementById('best-dodge').textContent = state.bestScores.dodge;
     document.getElementById('best-rune').textContent = state.bestScores.rune;
     document.getElementById('best-pulse').textContent = state.bestScores.pulse;
+    document.getElementById('best-type').textContent = state.bestScores.type || 0;
   }
 
   /* ============================== CORE FLEX / SHOCKWAVE ============================== */
@@ -483,6 +620,7 @@
     document.getElementById('result-streak').textContent = applyStreak();
 
     state.totalMana += gain;
+    if(state.bestScores[gameKey] === undefined) state.bestScores[gameKey] = 0;
     if(gain > state.bestScores[gameKey]) state.bestScores[gameKey] = gain;
     saveState();
     pushLeaderboard();
@@ -513,16 +651,19 @@
     card.addEventListener('click', ()=>{
       activeSession++;
       const g = card.dataset.game;
+      if(musicOn && musicTimer){ clearTimeout(musicTimer); musicTimer = null; musicPaused = true; }
       show(g);
       if(g==='spark') startSpark(activeSession);
       if(g==='dodge') startDodge(activeSession);
       if(g==='rune') startRune(activeSession);
       if(g==='pulse') startPulse(activeSession);
+      if(g==='type') startType(activeSession);
     });
   });
   document.querySelectorAll('[data-exit]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       activeSession++;
+      if(musicOn && musicPaused){ musicPaused = false; musicStep = 0; musicTick(); }
       refreshHub();
       show('hub');
     });
@@ -556,14 +697,18 @@
       entries.slice(0,15).forEach((e,i)=>{
         const row = document.createElement('div');
         row.className = 'lb-row' + (e.name===state.name ? ' me' : '');
-        row.innerHTML = '<div class="lb-rank '+(i<3?'gold':'')+'">'+(i+1)+'</div><div class="lb-name">'+escapeHtml(e.name)+'</div><div class="lb-mana">'+e.mana+'</div>';
+        const b = e.banner ? bannerById(e.banner) : null;
+        const badge = b ? '<span class="lb-banner">'+b.emoji+'</span>' : '';
+        row.innerHTML = '<div class="lb-rank '+(i<3?'gold':'')+'">'+(i+1)+'</div><div class="lb-name">'+badge+escapeHtml(e.name)+'</div><div class="lb-mana">'+e.mana+'</div>';
         listEl.appendChild(row);
       });
       const myRank = entries.findIndex(e=>e.name===state.name);
       if(myRank >= 15){
         const row = document.createElement('div');
         row.className = 'lb-row me';
-        row.innerHTML = '<div class="lb-rank gold">'+(myRank+1)+'</div><div class="lb-name">'+escapeHtml(state.name)+' (YOU)</div><div class="lb-mana">'+state.totalMana+'</div>';
+        const myB = bestBannerId(state.banners); const myBadgeObj = myB ? bannerById(myB) : null;
+        const myBadge = myBadgeObj ? '<span class="lb-banner">'+myBadgeObj.emoji+'</span>' : '';
+        row.innerHTML = '<div class="lb-rank gold">'+(myRank+1)+'</div><div class="lb-name">'+myBadge+escapeHtml(state.name)+' (YOU)</div><div class="lb-mana">'+state.totalMana+'</div>';
         listEl.appendChild(row);
       }
     }catch(e){
@@ -572,26 +717,48 @@
   }
   function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  /* ============================== TAP GAME (simple clicker: 3 clicks = 1 mana) ============================== */
+  /* ============================== TAP GAME (moving target, more spots: defeats fixed-position autoclickers) ============================== */
+  const SPARK_SLOTS = [
+    {x:0.05, y:0.05}, {x:0.78, y:0.10}, {x:0.35, y:0.42}, {x:0.05, y:0.78}, {x:0.72, y:0.72},
+    {x:0.90, y:0.42}, {x:0.42, y:0.02}, {x:0.20, y:0.60}, {x:0.55, y:0.85}, {x:0.15, y:0.30}
+  ];
+  function placeSpark(smiley, area, idx){
+    const rect = area.getBoundingClientRect();
+    const bw = smiley.offsetWidth || 110, bh = smiley.offsetHeight || 110;
+    const maxX = Math.max(0, rect.width - bw), maxY = Math.max(0, rect.height - bh);
+    const s = SPARK_SLOTS[idx];
+    smiley.style.left = (s.x*maxX) + 'px';
+    smiley.style.top = (s.y*maxY) + 'px';
+  }
   function startSpark(session){
     const oldBtn = document.getElementById('smiley-btn');
     const smiley = oldBtn.cloneNode(true); // wipes any old listeners from previous rounds
     oldBtn.replaceWith(smiley);
+    const area = document.getElementById('spark-area');
 
-    let clicks = 0, mana = 0;
+    let clicks = 0, mana = 0, lastSlot = -1;
     const DURATION = 15000;
     const startTime = performance.now();
     document.getElementById('spark-score').textContent = '0';
     document.getElementById('smiley-clicks').textContent = '0';
+
+    function moveToNewSlot(){
+      let idx = Math.floor(Math.random()*SPARK_SLOTS.length);
+      if(idx === lastSlot) idx = (idx+1) % SPARK_SLOTS.length;
+      lastSlot = idx;
+      placeSpark(smiley, area, idx);
+    }
+    moveToNewSlot();
 
     function onClick(){
       if(activeSession !== session) return;
       clicks++;
       smiley.style.transform = 'scale(.88)';
       setTimeout(()=>{ smiley.style.transform = 'scale(1)'; }, 90);
+      moveToNewSlot(); // relocate on every tap so a fixed-coordinate autoclicker stops landing hits
 
-      const remainder = clicks % 3;
-      document.getElementById('smiley-clicks').textContent = (remainder===0?3:remainder);
+      const remainder = clicks % 2;
+      document.getElementById('smiley-clicks').textContent = (remainder===0?2:remainder);
       if(remainder === 0){
         mana++;
         document.getElementById('spark-score').textContent = mana;
@@ -626,9 +793,12 @@
 
     let player = {x: canvas.width/2, y: canvas.height-30, size:22};
     let shards = [];
+    let fireballWarnings = []; // {x, until}
+    let fireballs = []; // {x, y, size, spd, passed}
+    let lastFireballSpawn = 0;
     const startTime = performance.now();
     let lastSpawn = 0;
-    let score = 0, nearMiss = 0;
+    let score = 0, fireballBonus = 0;
     const MAXTIME = 26000;
     document.getElementById('dodge-score').textContent = '0';
 
@@ -651,7 +821,34 @@
         shards.push({x: 20+Math.random()*(canvas.width-40), y:-10, size:20+Math.random()*14, spd:2.2+difficulty*3.2+Math.random()*1.5, passed:false});
         lastSpawn = ts;
       }
+
+      // Telegraphed fireball attack: warning marks appear, then a HUGE fast fireball drops
+      if(elapsed > 3000 && ts - lastFireballSpawn > (4800 - difficulty*2400)){
+        const fx = 55 + Math.random()*(canvas.width-110);
+        fireballWarnings.push({x:fx, until: ts+650});
+        lastFireballSpawn = ts;
+      }
+      fireballWarnings = fireballWarnings.filter(w=>{
+        if(ts >= w.until){
+          fireballs.push({x:w.x, y:-90, size:104, spd:6.5+difficulty*4, passed:false});
+          return false;
+        }
+        return true;
+      });
+
       ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // draw warning exclamation marks (flashing, spread to match the bigger fireball)
+      fireballWarnings.forEach(w=>{
+        const flash = Math.sin(ts/60) > 0;
+        ctx.fillStyle = flash ? '#ff4d4d' : '#7a1010';
+        ctx.font = 'bold 30px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('!', w.x-42, 36);
+        ctx.fillText('!', w.x, 20);
+        ctx.fillText('!', w.x+42, 36);
+      });
+
       ctx.fillStyle = '#2de2ff';
       ctx.fillRect(player.x-player.size/2, player.y-player.size/2, player.size, player.size);
       ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
@@ -666,11 +863,31 @@
         ctx.strokeRect(s.x-s.size/2, s.y-s.size/2, s.size, s.size);
         const dx = Math.abs(s.x-player.x), dy = Math.abs(s.y-player.y);
         if(dx < (s.size+player.size)/2 - 4 && dy < (s.size+player.size)/2 - 4) dead = true;
-        else if(!s.passed && dy < (s.size+player.size)/2 + 14 && s.y > player.y - 20){ s.passed = true; nearMiss++; }
       });
       shards = shards.filter(s => s.y < canvas.height+20);
 
-      score = Math.floor(elapsed/1000)*3 + nearMiss;
+      // draw + resolve fireballs (BIG, layered flame look — takes up real screen space)
+      fireballs.forEach(f=>{
+        f.y += f.spd;
+        ctx.fillStyle = 'rgba(255,120,20,0.30)';
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.size*0.95, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,120,20,0.55)';
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.size*0.7, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ff7a1a';
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.size*0.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffe94d';
+        ctx.beginPath(); ctx.arc(f.x, f.y, f.size*0.26, 0, Math.PI*2); ctx.fill();
+
+        const dx = Math.abs(f.x-player.x), dy = Math.abs(f.y-player.y);
+        if(dx < (f.size*0.68+player.size)/2 && dy < (f.size*0.68+player.size)/2) dead = true;
+        else if(!f.passed && dy < (f.size*0.55+player.size)/2 + 16 && f.y > player.y - 20){ f.passed = true; fireballBonus += 3; }
+      });
+      fireballs = fireballs.filter(f => f.y < canvas.height+110);
+
+      // Score is intentionally slow: 1 point every 2.5s survived + a small bonus per
+      // fireball dodged. Old formula (1pt/sec) was paying out way more mana than the
+      // other three games for a similar amount of time invested.
+      score = Math.floor(elapsed/1500) + fireballBonus;
       document.getElementById('dodge-score').textContent = score;
 
       if(dead || elapsed >= MAXTIME){
@@ -682,13 +899,151 @@
     requestAnimationFrame(loop);
   }
 
+  /* ============================== WORD DROP (keyboard-only) ============================== */
+  const TYPE_WORDS = [
+    'MANA','RUNE','SPARK','DODGE','PULSE','ARENA','QUEST','GLYPH','CHARM','FLAME',
+    'FROST','STORM','BLADE','SHARD','TOKEN','CRYPT','VOID','ECHO','ORBIT','WISP',
+    'MAGIC','POWER','GRIND','BOOST','LEVEL','TRIAL','BONUS','COMBO','CRAFT','FORGE',
+    'VAULT','TOWER','SPELL','WITCH','DEMON','ANGEL','DRAKE','TITAN','GIANT','GOLEM',
+    'WRAITH','PHOENIX','GRIFFIN','KRAKEN','SPIRIT','SHADOW','LIGHT','CHAOS','ORDER','HONOR',
+    'VALOR','GLORY','LEGEND','ORACLE','PORTAL','BEACON','ANCHOR','CIPHER','SIGIL','TOTEM',
+    'RELIC','AMULET','SCROLL','POTION','ELIXIR','VENOM','PLAGUE','CURSE','OMEN','FATE',
+    'DOOM','RIFT','NEXUS','CORE','SURGE','ROGUE','MYSTIC','WIZARD','KNIGHT','RANGER',
+    'WINDOW','BOTTLE','PENCIL','CARPET','BUTTON','CANDLE','BASKET','HAMMER','POCKET','JACKET',
+    'MIRROR','LADDER','PILLOW','BRIDGE','CLOSET','KETTLE','NAPKIN','BUCKET','WALLET','TICKET',
+    'FOREST','ISLAND','DESERT','VALLEY','MEADOW','RIVER','CANYON','VILLAGE','CASTLE','HARBOR',
+    'ANCIENT','BRISK','CLOVER','CRUMBLE','DAZZLE','FABLE','FRACTURE','GLOOM','HOLLOW','JOURNEY',
+    'KINSHIP','LANTERN','MYSTERY','NIMBLE','OUTLAND','PARADOX','QUARRY','RIDDLE','SILHOUETTE','THICKET',
+    'UMBRELLA','VIGOR','WHISPER','YONDER','ZEALOUS','ABYSS','AMBIGUOUS','BIZARRE','CONUNDRUM','DILEMMA',
+    'ELOQUENT','FRAGILE','GRAVITY','HYPOTHESIS','INTRICATE','JUBILANT','LABYRINTH','MOMENTUM','OBSCURE','PECULIAR',
+    'QUINTESSENCE','RESILIENT','SERENDIPITY','TURBULENT','UNORTHODOX','VORACIOUS','WISTFUL','ZEALOUS','ARCHAIC','CRESCENT'
+];
+  let typeKeyHandler = null;
+  function startType(session){
+    let typeWord = '', typeIdx = 0, typeScore = 0, typeY = 0, typeSpeed = 0.35;
+    document.getElementById('type-score').textContent = '0';
+    document.getElementById('type-timer').style.width = '100%';
+    const area = document.getElementById('type-area');
+
+    function pickWord(){
+      typeWord = TYPE_WORDS[Math.floor(Math.random()*TYPE_WORDS.length)];
+      typeIdx = 0; typeY = 0;
+      renderWord();
+    }
+    function renderWord(){
+      const el = document.getElementById('type-word');
+      el.innerHTML = '<span class="typed">'+typeWord.slice(0,typeIdx)+'</span><span class="pending">'+typeWord.slice(typeIdx)+'</span>';
+      el.style.top = typeY + 'px';
+    }
+    pickWord();
+
+    if(typeKeyHandler) document.removeEventListener('keydown', typeKeyHandler);
+    typeKeyHandler = function(e){
+      if(activeSession !== session) return;
+      const key = e.key.toUpperCase();
+      if(key.length !== 1 || key < 'A' || key > 'Z') return;
+      if(key === typeWord[typeIdx]){
+        typeIdx++;
+        renderWord();
+        if(typeIdx === typeWord.length){
+          typeScore += 3;
+          document.getElementById('type-score').textContent = typeScore;
+          typeSpeed = Math.min(1.1, typeSpeed + 0.05);
+          pickWord();
+        }
+      }
+    };
+    document.addEventListener('keydown', typeKeyHandler);
+
+    function loop(ts){
+      if(activeSession !== session){ document.removeEventListener('keydown', typeKeyHandler); return; }
+      typeY += typeSpeed;
+      renderWord();
+
+      if(typeY > area.clientHeight - 30){
+        document.removeEventListener('keydown', typeKeyHandler);
+        finishGame('type', typeScore, 'WORD DROP DONE');
+        return;
+      }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  /* ============================== AUDIO (generated tones — no external files needed) ============================== */
+  let audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ audioCtx = null; }
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    return audioCtx;
+  }
+  let musicVolume = 0.6;
+  function playTone(freq, dur, wave, vol){
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = wave || 'sine';
+    osc.frequency.value = freq;
+    const peak = 0.20 * (vol===undefined ? 1 : vol);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(Math.max(peak,0.0001), ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + dur);
+  }
+
+  /* ============================== LOBBY MUSIC (procedural, no external file needed) ============================== */
+  // Simple looping chiptune bassline+arpeggio built from oscillators so no audio asset
+  // has to be uploaded or hosted anywhere. Toggle with the 🎵 button in the hub.
+  let musicOn = false, musicTimer = null, musicStep = 0, musicPaused = false;
+  // Four bars, each with its own bassline + arp, so the loop takes longer to feel repetitive.
+  const MUSIC_BARS = [
+    { bass:[130.81,130.81,146.83,164.81], arp:[261.63,329.63,392.00,329.63,261.63,329.63,392.00,523.25] }, // C
+    { bass:[146.83,146.83,164.81,196.00], arp:[293.66,349.23,440.00,349.23,293.66,349.23,440.00,587.33] }, // D
+    { bass:[164.81,164.81,196.00,220.00], arp:[329.63,392.00,493.88,392.00,329.63,392.00,493.88,659.25] }, // E
+    { bass:[110.00,110.00,130.81,146.83], arp:[220.00,261.63,329.63,261.63,220.00,261.63,329.63,440.00] }  // A
+  ];
+  let musicBar = 0;
+  function musicTick(){
+    if(!musicOn) return;
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    const bar = MUSIC_BARS[musicBar % MUSIC_BARS.length];
+    if(musicStep % 2 === 0){ playTone(bar.bass[(musicStep/2)%bar.bass.length], 0.30, 'triangle', musicVolume); }
+    playTone(bar.arp[musicStep % bar.arp.length], 0.16, 'square', musicVolume);
+    if(musicStep % 4 === 2){ playTone(1800, 0.03, 'square', musicVolume*0.35); } // soft hi-hat tick
+    musicStep++;
+    if(musicStep % bar.arp.length === 0) musicBar++;
+    musicTimer = setTimeout(musicTick, 220);
+  }
+  function setMusic(on){
+    musicOn = on;
+    document.getElementById('toggle-music').style.color = on ? 'var(--yellow)' : 'var(--cyan)';
+    document.getElementById('toggle-music').style.borderColor = on ? 'var(--yellow)' : 'var(--cyan)';
+    if(on){ getAudioCtx(); musicStep = 0; musicTick(); }
+    else if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+  }
+  document.getElementById('toggle-music').addEventListener('click', ()=> setMusic(!musicOn));
+  document.getElementById('music-volume').addEventListener('input', e=>{ musicVolume = e.target.value/100; });
+
   /* ============================== SIMON SAYS ============================== */
   let runeSession = 0, runeAccepting = false, runeSeq = [], runePlayerIdx = 0, runeScore = 0;
   const runeTilesEls = () => Array.from(document.querySelectorAll('.rune-tile'));
+  // Each tile gets its own note AND its own waveform so the four colors are easy to
+  // tell apart by ear, not just by sight: tl=C4 sine, tr=E4 triangle, bl=G4 square, br=C5 sawtooth
+  const RUNE_TONES = [261.63, 329.63, 392.00, 523.25];
+  const RUNE_WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
   function startRune(session){
+    getAudioCtx(); // create/resume audio on this user gesture so sounds are allowed to play
     runeSession = session;
     runeSeq = []; runePlayerIdx = 0; runeScore = 0; runeAccepting = false;
     document.getElementById('rune-score').textContent = '0';
+    document.getElementById('rune-round').textContent = '0';
     document.getElementById('rune-instructions').textContent = 'WATCH CLOSELY...';
     nextRuneRound();
   }
@@ -697,6 +1052,7 @@
     runeSeq.push(Math.floor(Math.random()*4));
     runePlayerIdx = 0;
     runeAccepting = false;
+    document.getElementById('rune-round').textContent = runeSeq.length;
     playRuneSequence();
   }
   async function playRuneSequence(){
@@ -715,6 +1071,7 @@
     return new Promise(res=>{
       const t = runeTilesEls()[idx];
       t.classList.add('active');
+      playTone(RUNE_TONES[idx], 0.30, RUNE_WAVES[idx]);
       setTimeout(()=>{ t.classList.remove('active'); res(); }, Math.max(220, 380 - runeSeq.length*6));
     });
   }
@@ -724,11 +1081,12 @@
     t.addEventListener('click', ()=>{
       if(!runeAccepting || activeSession !== runeSession) return;
       t.classList.add('active'); setTimeout(()=>t.classList.remove('active'),140);
+      playTone(RUNE_TONES[i], 0.18, RUNE_WAVES[i]);
       if(i === runeSeq[runePlayerIdx]){
         runePlayerIdx++;
         if(runePlayerIdx === runeSeq.length){
           runeAccepting = false;
-          runeScore += 5 * runeSeq.length;
+          runeScore += 5;
           document.getElementById('rune-score').textContent = runeScore;
           if(runeSeq.length >= 14){
             finishGame('rune', runeScore, 'SIMON SAYS DONE');
@@ -746,10 +1104,10 @@
   });
 
   /* ============================== TIMING GAME ============================== */
-  let pulseSession = 0, pulseAttempts = 0, pulseScore = 0, pulseCombo = 0, pulseZonePos = 0.5, pulseZoneWidth = 0.24, pulseSpeed = 1.3, pulseCanStrike = true;
+  let pulseSession = 0, pulseHits = 0, pulseScore = 0, pulseCombo = 0, pulseZonePos = 0.5, pulseZoneWidth = 0.24, pulseSpeed = 1.3, pulseCanStrike = true;
   function startPulse(session){
     pulseSession = session;
-    pulseAttempts = 0; pulseScore = 0; pulseCombo = 0; pulseZoneWidth = 0.24; pulseSpeed = 1.3; pulseCanStrike = true;
+    pulseHits = 0; pulseScore = 0; pulseCombo = 0; pulseZoneWidth = 0.24; pulseSpeed = 1.3; pulseCanStrike = true;
     document.getElementById('pulse-score').textContent = '0';
     document.getElementById('pulse-dots').innerHTML = '';
     newPulseZone();
@@ -793,8 +1151,8 @@
     const dist = Math.abs(markerPos - pulseZonePos);
 
     let type, gain;
-    if(dist < pulseZoneWidth*0.28){ type='perfect'; pulseCombo++; gain = Math.round(4*(1+pulseCombo*0.12)); }
-    else if(dist < pulseZoneWidth/2){ type='good'; pulseCombo++; gain = Math.round(2*(1+pulseCombo*0.08)); }
+    if(dist < pulseZoneWidth*0.28){ type='perfect'; pulseCombo++; gain = Math.round(3*(1+pulseCombo*0.08)); }
+    else if(dist < pulseZoneWidth/2){ type='good'; pulseCombo++; gain = Math.round(1.5*(1+pulseCombo*0.05)); }
     else { type='miss'; pulseCombo = 0; gain = 0; }
 
     pulseScore += gain;
@@ -805,14 +1163,15 @@
     dot.className = 'attempt-dot ' + type;
     document.getElementById('pulse-dots').appendChild(dot);
 
-    pulseAttempts++;
-    pulseZoneWidth = Math.max(0.13, pulseZoneWidth - 0.01);
-    pulseSpeed = Math.min(2.6, pulseSpeed + 0.06);
-    newPulseZone();
-
-    if(pulseAttempts >= 10){
+    if(type === 'miss'){
       finishGame('pulse', pulseScore, 'TIMING GAME DONE');
+      return;
     }
+
+    pulseHits++;
+    pulseZoneWidth = Math.max(0.08, pulseZoneWidth - 0.012);
+    pulseSpeed = Math.min(5, pulseSpeed + 0.09);
+    newPulseZone();
   }
   function showFeedback(container, text, type){
     const el = document.createElement('div');
@@ -822,6 +1181,184 @@
     container.style.position = container.style.position || 'relative';
     container.appendChild(el);
     setTimeout(()=> el.remove(), 500);
+  }
+
+  /* ============================== SLOT MACHINE / BANNERS ============================== */
+  // Ordered rarest-LAST here (common → rare) so the shelf and the rollBanner() loop below
+  // read the same direction as you asked: clover 1/20, blazing 1/40, diamond 1/100,
+  // royal 1/1000, mythic 1/10000. Odds are exact fractions and never overlap.
+  const SLOT_BANNERS = [
+    {id:'lucky',   label:'LUCKY CLOVER', emoji:'🍀', odds:1/20,    color:'#39ff14'},
+    {id:'blazing', label:'BLAZING',      emoji:'🔥', odds:1/40,    color:'#ff7a1a'},
+    {id:'diamond', label:'DIAMOND',      emoji:'💎', odds:1/100,   color:'#2de2ff'},
+    {id:'royal',   label:'ROYAL',        emoji:'👑', odds:1/1000,  color:'#ffe94d'},
+    {id:'mythic',  label:'MYTHIC',       emoji:'🌈', odds:1/10000, color:'#ff3fa4'}
+  ];
+  const SPIN_COST = 40;
+  const BUST_SYMBOLS = ['💀','⭐','🍋','🍒','⚡','🍇'];
+
+  function bannerById(id){ return SLOT_BANNERS.find(b=>b.id===id) || null; }
+  function bestBannerId(owned){
+    if(!owned || !owned.length) return null;
+    let best = null;
+    // rarest = smallest odds fraction
+    SLOT_BANNERS.forEach(b=>{
+      if(owned.includes(b.id) && (!best || b.odds < bannerById(best).odds)) best = b.id;
+    });
+    return best;
+  }
+  // Rolls rarest-to-common so each banner's stated odds are exact and don't overlap.
+  function rollBanner(){
+    const rarestFirst = [...SLOT_BANNERS].sort((a,b)=> a.odds - b.odds);
+    const r = Math.random();
+    for(const b of rarestFirst){ if(r < b.odds) return b; }
+    return null; // bust
+  }
+
+  function refreshSlotsScreen(clearResult){
+    document.getElementById('slots-mana').textContent = state.totalMana;
+    if(clearResult){
+      document.getElementById('slots-result').textContent = '';
+      document.getElementById('slots-result').className = 'slots-result';
+    }
+    const shelf = document.getElementById('banner-shelf');
+    shelf.innerHTML = '';
+    SLOT_BANNERS.forEach(b=>{
+      const owned = (state.banners||[]).includes(b.id);
+      const el = document.createElement('div');
+      el.className = 'banner-chip' + (owned ? ' owned' : '');
+      el.style.color = owned ? b.color : '';
+      el.style.borderColor = owned ? b.color : '';
+      el.textContent = b.emoji + ' ' + b.label + ' (1/' + Math.round(1/b.odds) + ')';
+      shelf.appendChild(el);
+    });
+  }
+
+  let slotsSpinning = false;
+  function burstConfetti(container){
+    const colors = ['#39ff14','#2de2ff','#ffe94d','#ff3fa4','#ff7a1a'];
+    for(let i=0;i<24;i++){
+      const p = document.createElement('div');
+      p.className = 'confetti-bit';
+      p.style.left = (40+Math.random()*20)+'%';
+      p.style.background = colors[Math.floor(Math.random()*colors.length)];
+      p.style.setProperty('--dx', (Math.random()*2-1).toFixed(2));
+      p.style.animationDelay = (Math.random()*0.15)+'s';
+      container.appendChild(p);
+      setTimeout(()=> p.remove(), 1300);
+    }
+  }
+  async function doSpin(){
+    if(slotsSpinning) return;
+    if(state.totalMana < SPIN_COST){
+      const r = document.getElementById('slots-result');
+      r.style.color = 'var(--red)';
+      r.textContent = 'NOT ENOUGH MANA';
+      return;
+    }
+    slotsSpinning = true;
+    getAudioCtx();
+    state.totalMana -= SPIN_COST;
+    document.getElementById('slots-mana').textContent = state.totalMana;
+    document.getElementById('slots-result').textContent = '';
+    document.getElementById('slots-result').className = 'slots-result';
+
+    const reels = [document.getElementById('reel-0'), document.getElementById('reel-1'), document.getElementById('reel-2')];
+    reels.forEach(r=> r.classList.add('spin'));
+    playTone(180, 0.08, 'square', 0.5);
+
+    const wonBanner = rollBanner();
+    const win = !!wonBanner;
+    let finalSymbols;
+    let nearMiss = false;
+    if(win){
+      finalSymbols = [wonBanner.emoji, wonBanner.emoji, wonBanner.emoji];
+    } else {
+      finalSymbols = [0,0,0].map(()=> BUST_SYMBOLS[Math.floor(Math.random()*BUST_SYMBOLS.length)]);
+      if(finalSymbols[0]===finalSymbols[1] && finalSymbols[1]===finalSymbols[2]){
+        finalSymbols[2] = BUST_SYMBOLS[(BUST_SYMBOLS.indexOf(finalSymbols[2])+1) % BUST_SYMBOLS.length];
+      }
+      // ~1 in 3 busted spins gets a "so close" 2-of-3 tease — pure showmanship, doesn't touch the real odds
+      if(Math.random() < 0.33 && finalSymbols[0] !== finalSymbols[1]){
+        finalSymbols[1] = finalSymbols[0];
+        nearMiss = true;
+      }
+    }
+
+    const allSymbols = BUST_SYMBOLS.concat(SLOT_BANNERS.map(b=>b.emoji));
+    const spinInterval = setInterval(()=>{
+      reels.forEach(r=>{ if(r.classList.contains('spin')) r.textContent = allSymbols[Math.floor(Math.random()*allSymbols.length)]; });
+    }, 70);
+
+    // reels stop one at a time for suspense, each with its own little "clunk"
+    await sleep(700);
+    reels[0].classList.remove('spin'); reels[0].textContent = finalSymbols[0];
+    playTone(220, 0.12, 'square', 0.6);
+    await sleep(350);
+    reels[1].classList.remove('spin'); reels[1].textContent = finalSymbols[1];
+    playTone(220, 0.12, 'square', 0.6);
+    await sleep(350);
+    clearInterval(spinInterval);
+    reels[2].classList.remove('spin'); reels[2].textContent = finalSymbols[2];
+    playTone(win ? 330 : 160, 0.16, 'square', 0.6);
+
+    const resultEl = document.getElementById('slots-result');
+    const machineEl = document.getElementById('slot-machine');
+    resultEl.className = 'slots-result';
+    if(!state.banners) state.banners = [];
+    if(win){
+      const already = state.banners.includes(wonBanner.id);
+      if(!already){
+        state.banners.push(wonBanner.id);
+        resultEl.style.color = wonBanner.color;
+        resultEl.textContent = 'NEW BANNER: ' + wonBanner.emoji + ' ' + wonBanner.label + '!';
+        burstConfetti(machineEl);
+        [523.25,659.25,783.99].forEach((f,i)=> setTimeout(()=> playTone(f,0.25,'triangle',0.6), i*110));
+        if(wonBanner.id === 'royal' || wonBanner.id === 'mythic'){
+          resultEl.classList.add('jackpot');
+          machineEl.classList.add('jackpot-flash');
+          setTimeout(()=> machineEl.classList.remove('jackpot-flash'), 1100);
+          burstConfetti(machineEl);
+        }
+      } else {
+        state.totalMana += 20;
+        resultEl.style.color = 'var(--cyan)';
+        resultEl.textContent = 'ALREADY OWNED — +20 MANA REFUND';
+        playTone(440, 0.15, 'triangle', 0.5);
+      }
+    } else if(nearMiss){
+      resultEl.style.color = 'var(--yellow)';
+      resultEl.textContent = 'SO CLOSE!';
+      playTone(200, 0.2, 'sawtooth', 0.4);
+    } else {
+      resultEl.style.color = 'var(--dim)';
+      resultEl.textContent = 'NO WIN. TRY AGAIN!';
+    }
+
+    document.getElementById('slots-mana').textContent = state.totalMana;
+    await saveState();
+    refreshSlotsScreen(false);
+    await pushLeaderboard();
+    slotsSpinning = false;
+  }
+
+  document.getElementById('slots-spin-btn').addEventListener('click', doSpin);
+  document.getElementById('open-slots').addEventListener('click', ()=>{
+    activeSession++;
+    refreshSlotsScreen(true);
+    show('slots');
+  });
+
+/* ============================== MOBILE LOCK (Word Drop needs a physical keyboard) ============================== */
+  function isMobile(){
+    return window.matchMedia('(pointer: coarse)').matches || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+  if(isMobile()){
+    const card = document.getElementById('card-type');
+    if(card){
+      card.classList.add('disabled');
+      document.getElementById('type-best-row').textContent = 'DESKTOP ONLY';
+    }
   }
 
   /* ============================== BOOT ============================== */
