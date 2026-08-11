@@ -747,15 +747,29 @@
       if(idx === lastSlot) idx = (idx+1) % SPARK_SLOTS.length;
       lastSlot = idx;
       placeSpark(smiley, area, idx);
+      if(Math.random() < 0.08){
+        smiley.textContent = '🌟';
+        smiley.dataset.golden = '1';
+      } else {
+        smiley.textContent = '🙂';
+        smiley.dataset.golden = '0';
+      }
     }
     moveToNewSlot();
 
     function onClick(){
       if(activeSession !== session) return;
+      const wasGolden = smiley.dataset.golden === '1';
       clicks++;
       smiley.style.transform = 'scale(.88)';
       setTimeout(()=>{ smiley.style.transform = 'scale(1)'; }, 90);
       moveToNewSlot(); // relocate on every tap so a fixed-coordinate autoclicker stops landing hits
+
+      if(wasGolden){
+        mana += 5;
+        document.getElementById('spark-score').textContent = mana;
+        return;
+      }
 
       const remainder = clicks % 2;
       document.getElementById('smiley-clicks').textContent = (remainder===0?2:remainder);
@@ -1191,6 +1205,7 @@
     {id:'lucky',   label:'LUCKY CLOVER', emoji:'🍀', odds:1/20,    color:'#39ff14'},
     {id:'blazing', label:'BLAZING',      emoji:'🔥', odds:1/40,    color:'#ff7a1a'},
     {id:'diamond', label:'DIAMOND',      emoji:'💎', odds:1/100,   color:'#2de2ff'},
+    {id:'jackpot', label:'500 MANA JACKPOT', emoji:'💰', odds:1/101, color:'#39ff14', manaBonus:500},
     {id:'royal',   label:'ROYAL',        emoji:'👑', odds:1/1000,  color:'#ffe94d'},
     {id:'mythic',  label:'MYTHIC',       emoji:'🌈', odds:1/10000, color:'#ff3fa4'}
   ];
@@ -1306,7 +1321,17 @@
     const machineEl = document.getElementById('slot-machine');
     resultEl.className = 'slots-result';
     if(!state.banners) state.banners = [];
-    if(win){
+    if(win && wonBanner.manaBonus){
+      state.totalMana += wonBanner.manaBonus;
+      resultEl.style.color = wonBanner.color;
+      resultEl.textContent = 'JACKPOT! +' + wonBanner.manaBonus + ' MANA!';
+      resultEl.classList.add('jackpot');
+      machineEl.classList.add('jackpot-flash');
+      setTimeout(()=> machineEl.classList.remove('jackpot-flash'), 1100);
+      burstConfetti(machineEl);
+      burstConfetti(machineEl);
+      [523.25,659.25,783.99,987.77].forEach((f,i)=> setTimeout(()=> playTone(f,0.25,'triangle',0.6), i*110));
+    } else if(win){
       const already = state.banners.includes(wonBanner.id);
       if(!already){
         state.banners.push(wonBanner.id);
@@ -1363,9 +1388,14 @@
 
   /* ============================== BOOT ============================== */
   async function boot(){
-    const has = await loadState();
-    if(has){ refreshHub(); show('hub'); }
-    else show('name');
+    try{
+      const has = await loadState();
+      if(has){ refreshHub(); show('hub'); }
+      else show('name');
+    }catch(e){
+      console.warn('Boot failed, falling back to name screen:', e);
+      show('name');
+    }
   }
   boot();
 
