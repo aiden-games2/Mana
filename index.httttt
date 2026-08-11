@@ -337,7 +337,7 @@
       <button class="game-card c5" data-game="type" id="card-type">
         <div class="icon">⌨</div>
         <div class="g-name">WORD DROP</div>
-        <div class="g-best" id="type-best-row">BEST: <span id="best-type">0</span></div>
+        <div class="g-best" id="type-best-row">BEST: <span id="best-type">0</span><span id="type-desktop-note" class="hidden"> (DESKTOP ONLY)</span></div>
       </button>
     </div>
   </div>
@@ -534,15 +534,19 @@
   const screens = ['name','hub','spark','dodge','rune','pulse','type','slots'];
   function show(id){ screens.forEach(s => document.getElementById('screen-'+s).classList.toggle('hidden', s!==id)); }
 
+  function setTextSafe(id, val){
+    const el = document.getElementById(id);
+    if(el) el.textContent = val;
+  }
   function refreshHub(){
-    document.getElementById('hub-mana').textContent = state.totalMana;
-    document.getElementById('hub-name').textContent = state.name;
-    document.getElementById('streak-num').textContent = state.streak;
-    document.getElementById('best-spark').textContent = state.bestScores.spark;
-    document.getElementById('best-dodge').textContent = state.bestScores.dodge;
-    document.getElementById('best-rune').textContent = state.bestScores.rune;
-    document.getElementById('best-pulse').textContent = state.bestScores.pulse;
-    document.getElementById('best-type').textContent = state.bestScores.type || 0;
+    setTextSafe('hub-mana', state.totalMana);
+    setTextSafe('hub-name', state.name);
+    setTextSafe('streak-num', state.streak);
+    setTextSafe('best-spark', state.bestScores.spark);
+    setTextSafe('best-dodge', state.bestScores.dodge);
+    setTextSafe('best-rune', state.bestScores.rune);
+    setTextSafe('best-pulse', state.bestScores.pulse);
+    setTextSafe('best-type', state.bestScores.type || 0);
   }
 
   /* ============================== CORE FLEX / SHOCKWAVE ============================== */
@@ -1210,7 +1214,6 @@
     {id:'mythic',  label:'MYTHIC',       emoji:'🌈', odds:1/10000, color:'#ff3fa4'}
   ];
   const SPIN_COST = 40;
-  const BUST_SYMBOLS = ['💀','⭐','🍋','🍒','⚡','🍇'];
 
   function bannerById(id){ return SLOT_BANNERS.find(b=>b.id===id) || null; }
   function bestBannerId(owned){
@@ -1289,9 +1292,10 @@
     if(win){
       finalSymbols = [wonBanner.emoji, wonBanner.emoji, wonBanner.emoji];
     } else {
-      finalSymbols = [0,0,0].map(()=> BUST_SYMBOLS[Math.floor(Math.random()*BUST_SYMBOLS.length)]);
+      const emojiPool = SLOT_BANNERS.map(b=>b.emoji);
+      finalSymbols = [0,0,0].map(()=> emojiPool[Math.floor(Math.random()*emojiPool.length)]);
       if(finalSymbols[0]===finalSymbols[1] && finalSymbols[1]===finalSymbols[2]){
-        finalSymbols[2] = BUST_SYMBOLS[(BUST_SYMBOLS.indexOf(finalSymbols[2])+1) % BUST_SYMBOLS.length];
+        finalSymbols[2] = emojiPool[(emojiPool.indexOf(finalSymbols[2])+1) % emojiPool.length];
       }
       // ~1 in 3 busted spins gets a "so close" 2-of-3 tease — pure showmanship, doesn't touch the real odds
       if(Math.random() < 0.33 && finalSymbols[0] !== finalSymbols[1]){
@@ -1300,7 +1304,7 @@
       }
     }
 
-    const allSymbols = BUST_SYMBOLS.concat(SLOT_BANNERS.map(b=>b.emoji));
+    const allSymbols = SLOT_BANNERS.map(b=>b.emoji);
     const spinInterval = setInterval(()=>{
       reels.forEach(r=>{ if(r.classList.contains('spin')) r.textContent = allSymbols[Math.floor(Math.random()*allSymbols.length)]; });
     }, 70);
@@ -1382,7 +1386,8 @@
     const card = document.getElementById('card-type');
     if(card){
       card.classList.add('disabled');
-      document.getElementById('type-best-row').textContent = 'DESKTOP ONLY';
+      const note = document.getElementById('type-desktop-note');
+      if(note) note.classList.remove('hidden');
     }
   }
 
